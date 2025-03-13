@@ -3,18 +3,20 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Ground
+  - DeathZone
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Ground
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
+  - DeathZone
+  - bg
+  - platform
+  - player
   - 
   - 
   - 
@@ -40,4 +42,13 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: bacground
+    uniqueID: 3702747799
+    locked: 0
+  - name: platform
+    uniqueID: 1033525705
+    locked: 0
+  - name: player
+    uniqueID: 1935859665
     locked: 0

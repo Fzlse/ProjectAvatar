@@ -2,17 +2,17 @@
     "name": "PlayerControl",
     "maps": [
         {
-            "name": "move",
+            "name": "Player",
             "id": "064854f7-c072-4282-828f-9c40da6ab82a",
             "actions": [
                 {
                     "name": "RightMove",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "a805e344-abd1-4a2e-9834-0a448a5c51b7",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "jump",
@@ -25,8 +25,17 @@
                 },
                 {
                     "name": "left move",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "f20d018e-bcbd-4437-8cd6-4a72f755820d",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Retry",
+                    "type": "Button",
+                    "id": "14b703ff-4169-41b7-9dbe-f745aa3eae7f",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -64,6 +73,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "left move",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5e30df27-46db-4658-99e9-2fdcdd84baf3",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Retry",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -14,9 +14,11 @@ public class PlayerInputHandler : MonoBehaviour
     [Header("Action Names")]
     [SerializeField] private string move = "Move";
     [SerializeField] private string jump = "Jump";
+    [SerializeField] private string retry = "Retry"; // Tambahkan input Retry
 
     private InputAction moveAction;
     private InputAction jumpAction;
+    private InputAction retryAction;
 
     public Vector2 MoveInput { get; private set; }
     public bool JumpTriggered { get; private set; }
@@ -41,41 +43,53 @@ public class PlayerInputHandler : MonoBehaviour
         var actionMap = playerControls.FindActionMap(actionMapName);
         if (actionMap == null)
         {
-            Debug.LogError("ActionMap with name " + actionMapName + " not found!");
+            Debug.LogError($"ActionMap '{actionMapName}' not found!");
             return;
         }
 
         moveAction = actionMap.FindAction(move);
         jumpAction = actionMap.FindAction(jump);
+        retryAction = actionMap.FindAction(retry); // Ambil action retry
 
         RegisterInputActions();
     }
 
-    void RegisterInputActions()
+    private void RegisterInputActions()
     {
         if (moveAction != null)
         {
-            moveAction.performed += context => MoveInput = context.ReadValue<Vector2>();
-            moveAction.canceled += context => MoveInput = Vector2.zero;
+            moveAction.performed += ctx => MoveInput = ctx.ReadValue<Vector2>();
+            moveAction.canceled += ctx => MoveInput = Vector2.zero;
         }
-
         if (jumpAction != null)
         {
-            jumpAction.performed += context => JumpTriggered = true;
-            jumpAction.canceled += context => JumpTriggered = false;
+            jumpAction.performed += ctx => JumpTriggered = true;
+            jumpAction.canceled += ctx => JumpTriggered = false;
+        }
+        if (retryAction != null) // Tambahkan event untuk retry
+        {
+            retryAction.performed += ctx =>
+            {
+                if (GameManager.Instance.IsGameOver()) return;
+                {
+                    GameManager.Instance.RetryGame();
+                }
+            };
         }
     }
 
     public void EnableInput()
     {
-        if (moveAction != null) moveAction.Enable();
-        if (jumpAction != null) jumpAction.Enable();
+        moveAction?.Enable();
+        jumpAction?.Enable();
+        retryAction?.Enable(); // Pastikan input retry juga di-enable
     }
 
     public void DisableInput()
     {
-        if (moveAction != null) moveAction.Disable();
-        if (jumpAction != null) jumpAction.Disable();
+        moveAction?.Disable();
+        jumpAction?.Disable();
+        retryAction?.Disable();
     }
 
     private void OnEnable() => EnableInput();

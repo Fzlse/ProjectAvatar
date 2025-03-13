@@ -1,4 +1,4 @@
-using UnityEngine;
+/*using UnityEngine;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
@@ -84,4 +84,4 @@ public class GameManager : MonoBehaviour
         if (retryPopup != null)
             retryPopup.SetActive(false);  // Hide retry popup
     }
-}
+}*/

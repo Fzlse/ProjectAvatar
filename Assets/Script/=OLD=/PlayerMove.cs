@@ -1,4 +1,4 @@
-using UnityEngine;
+/*using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
 {
@@ -173,4 +173,4 @@ public class PlayerMove : MonoBehaviour
             staminaText.text = "Stamina: " + Mathf.RoundToInt(stamina).ToString(); // Update UI with current stamina
         }
     }
-}
+}*/
