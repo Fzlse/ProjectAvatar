@@ -67,6 +67,17 @@
                 },
                 {
                     "name": "",
+                    "id": "abfc686c-0115-45d8-9236-bd87ccc4c03a",
+                    "path": "<XInputController>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "13a7530e-1afa-4be2-9c2a-43107d10023a",
                     "path": "<Keyboard>/a",
                     "interactions": "",

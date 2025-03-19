@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -9,58 +10,48 @@ public class GameManager : MonoBehaviour
     [Header("UI Settings")]
     public GameObject gameOverPanel;
 
-    [Header("Player Settings")]
-    public GameObject playerPrefab;
-    private GameObject currentPlayer;
-    private CameraFollow cameraFollow;
+    [Header("Score Settings")]
+    public Transform player; // Referensi ke pemain
+    private Vector3 startPosition;
+    private float score = 0f;
+    public TextMeshProUGUI scoreText;
+
     private bool isGameOver = false;
 
-    private Transform playerSpawnPoint;
-    public bool IsGameOver() => isGameOver;
-    private PlayerInput playerInput;
+    public bool IsGameOver => isGameOver;
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
     }
 
     private void Start()
     {
-        cameraFollow = FindObjectOfType<CameraFollow>();
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+        isGameOver = false;
+        Time.timeScale = 1f;
 
-        // Temukan PlayerInput di scene
-        playerInput = FindObjectOfType<PlayerInput>();
-        if (playerInput == null)
-        {
-            Debug.LogError("PlayerInput tidak ditemukan! Tambahkan PlayerInput sebagai objek terpisah di scene.");
-        }
+        if (player != null)
+            startPosition = player.position; // Simpan posisi awal pemain
+    }
 
-        // Cari posisi spawn default dari prefab
-        if (playerPrefab != null)
+    private void Update()
+    {
+        if (isGameOver && Keyboard.current.rKey.wasPressedThisFrame)
         {
-            playerSpawnPoint = playerPrefab.transform;
-        }
-        else
-        {
-            Debug.LogError("Player Prefab belum diassign di GameManager!");
+            BackToMainMenu();
         }
 
-        // Cari player di scene
-        currentPlayer = GameObject.FindGameObjectWithTag("Player");
-        if (currentPlayer == null)
+        // Update skor berdasarkan jarak yang ditempuh
+        if (!isGameOver && player != null)
         {
-            Debug.Log("Tidak ada player di scene, spawn sekarang.");
-            SpawnPlayer();
-        }
-        else
-        {
-            cameraFollow.SetPlayer(currentPlayer.transform);
-        }
-
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(false);
+            score = Vector3.Distance(startPosition, player.position);
+            scoreText.text = "Score: " + Mathf.FloorToInt(score);
         }
     }
 
@@ -69,66 +60,27 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
 
         isGameOver = true;
-        Debug.Log("Game Over!");
+        Debug.Log("Game Over! Final Score: " + Mathf.FloorToInt(score));
 
-        if (currentPlayer != null)
-        {
-            Destroy(currentPlayer);
-            currentPlayer = null;
-        }
+        if (gameOverPanel != null) gameOverPanel.SetActive(true);
 
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(true);
-        }
-
-        Time.timeScale = 0.01f;
+        Time.timeScale = 0f;
     }
 
-    public void RetryGame()
+    public void BackToMainMenu()
     {
         if (!isGameOver) return;
 
-        Debug.Log("Retrying Game...");
-        isGameOver = false;
+        Debug.Log("Returning to Main Menu...");
         Time.timeScale = 1f;
+        isGameOver = false;
+        Destroy(Instance.gameObject);
 
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(false);
-        }
-
-        SpawnPlayer();
+        SceneManager.LoadScene("MainMenu");
     }
 
-    private void SpawnPlayer()
+    public int GetScore()
     {
-        if (playerPrefab == null || playerSpawnPoint == null)
-        {
-            Debug.LogError("PlayerPrefab atau SpawnPoint tidak ditemukan!");
-            return;
-        }
-
-        if (currentPlayer != null)
-        {
-            Destroy(currentPlayer);
-        }
-
-        currentPlayer = Instantiate(playerPrefab, playerSpawnPoint.position, Quaternion.identity);
-        Debug.Log("Player spawned.");
-
-        // Update referensi player di CameraFollow
-        if (cameraFollow != null)
-        {
-            cameraFollow.SetPlayer(currentPlayer.transform);
-        }
-    }
-
-    public void OnRetry(InputAction.CallbackContext context)
-    {
-        if (context.performed && isGameOver)
-        {
-            RetryGame();
-        }
+        return Mathf.FloorToInt(score);
     }
 }

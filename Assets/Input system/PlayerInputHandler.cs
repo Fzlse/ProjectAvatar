@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 public class PlayerInputHandler : MonoBehaviour
 {
-    public static PlayerInputHandler Instance { get; private set; } // Singleton
+    public static PlayerInputHandler Instance { get; private set; }
 
     [Header("Input Action Asset")]
     [SerializeField] private InputActionAsset playerControls;
@@ -14,7 +14,7 @@ public class PlayerInputHandler : MonoBehaviour
     [Header("Action Names")]
     [SerializeField] private string move = "Move";
     [SerializeField] private string jump = "Jump";
-    [SerializeField] private string retry = "Retry"; // Tambahkan input Retry
+    [SerializeField] private string retry = "Retry";
 
     private InputAction moveAction;
     private InputAction jumpAction;
@@ -32,7 +32,6 @@ public class PlayerInputHandler : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
 
         if (playerControls == null)
         {
@@ -49,7 +48,7 @@ public class PlayerInputHandler : MonoBehaviour
 
         moveAction = actionMap.FindAction(move);
         jumpAction = actionMap.FindAction(jump);
-        retryAction = actionMap.FindAction(retry); // Ambil action retry
+        retryAction = actionMap.FindAction(retry);
 
         RegisterInputActions();
     }
@@ -66,13 +65,13 @@ public class PlayerInputHandler : MonoBehaviour
             jumpAction.performed += ctx => JumpTriggered = true;
             jumpAction.canceled += ctx => JumpTriggered = false;
         }
-        if (retryAction != null) // Tambahkan event untuk retry
+        if (retryAction != null)
         {
             retryAction.performed += ctx =>
             {
-                if (GameManager.Instance.IsGameOver()) return;
+                if (GameManager.Instance != null && GameManager.Instance.IsGameOver)
                 {
-                    GameManager.Instance.RetryGame();
+                    GameManager.Instance.BackToMainMenu();
                 }
             };
         }
@@ -82,7 +81,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         moveAction?.Enable();
         jumpAction?.Enable();
-        retryAction?.Enable(); // Pastikan input retry juga di-enable
+        retryAction?.Enable();
     }
 
     public void DisableInput()

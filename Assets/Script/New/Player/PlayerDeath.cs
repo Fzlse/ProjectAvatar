@@ -6,7 +6,7 @@ public class PlayerDeath : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.CompareTag("DeathZone"))
+        if (collision.gameObject.CompareTag("DeathZone") || collision.gameObject.CompareTag("Enemy"))
         {
             GameManager.Instance.GameOver();
         }
