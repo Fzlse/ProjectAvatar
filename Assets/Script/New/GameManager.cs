@@ -9,9 +9,10 @@ public class GameManager : MonoBehaviour
 
     [Header("UI Settings")]
     public GameObject gameOverPanel;
+    public TextMeshProUGUI finalScoreText; // Tambahkan ini untuk menampilkan skor akhir
 
     [Header("Score Settings")]
-    public Transform player; // Referensi ke pemain
+    public Transform player;
     private Vector3 startPosition;
     private float score = 0f;
     public TextMeshProUGUI scoreText;
@@ -37,7 +38,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
 
         if (player != null)
-            startPosition = player.position; // Simpan posisi awal pemain
+            startPosition = player.position;
     }
 
     private void Update()
@@ -47,7 +48,6 @@ public class GameManager : MonoBehaviour
             BackToMainMenu();
         }
 
-        // Update skor berdasarkan jarak yang ditempuh
         if (!isGameOver && player != null)
         {
             score = Vector3.Distance(startPosition, player.position);
@@ -62,7 +62,12 @@ public class GameManager : MonoBehaviour
         isGameOver = true;
         Debug.Log("Game Over! Final Score: " + Mathf.FloorToInt(score));
 
-        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
+            if (finalScoreText != null)
+                finalScoreText.text = "Final Score: " + Mathf.FloorToInt(score);
+        }
 
         Time.timeScale = 0f;
     }

@@ -12,6 +12,10 @@ public class LevelGenerator : MonoBehaviour
     public float minY = -2f;
     public float maxY = 2f;
 
+    [Header("Moving Platform Settings")]
+    public GameObject movingPlatformPrefab;
+    public float movingPlatformChance = 0.3f; 
+
     [Header("Enemy Settings")]
     public GameObject enemyPrefab;
     public float enemySpawnChance = 0.3f;
@@ -58,9 +62,17 @@ public class LevelGenerator : MonoBehaviour
     void SpawnPlatform()
     {
         float randomY = Random.Range(minY, maxY);
-        GameObject platform = Instantiate(platformPrefab, new Vector3(spawnX, randomY, 0), Quaternion.identity);
+
+        // Cegah moving platform muncul di awal (misalnya, hanya muncul setelah 3 platform pertama)
+        bool allowMovingPlatform = activePlatforms.Count >= 3;
+        bool isMovingPlatform = allowMovingPlatform && (Random.value < movingPlatformChance);
+
+        GameObject platformToSpawn = isMovingPlatform ? movingPlatformPrefab : platformPrefab;
+
+        GameObject platform = Instantiate(platformToSpawn, new Vector3(spawnX, randomY, 0), Quaternion.identity);
         activePlatforms.Add(platform);
 
+        // Spawn musuh jika kondisi terpenuhi
         if (canSpawnEnemies && enemyPrefab != null && Random.value < enemySpawnChance && playerTransform != null)
         {
             float distanceFromPlayer = Mathf.Abs(spawnX - playerTransform.position.x);
@@ -70,6 +82,12 @@ public class LevelGenerator : MonoBehaviour
                 Vector3 enemyPosition = new Vector3(spawnX + enemyXOffset, randomY + enemyOffsetY, 0);
                 GameObject enemy = Instantiate(enemyPrefab, enemyPosition, Quaternion.identity);
                 activeEnemies.Add(enemy);
+
+                // Jika platform ini platform bergerak, jadikan enemy sebagai child dari platform
+                if (isMovingPlatform)
+                {
+                    enemy.transform.SetParent(platform.transform);
+                }
             }
         }
 
