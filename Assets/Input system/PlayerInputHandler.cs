@@ -14,14 +14,20 @@ public class PlayerInputHandler : MonoBehaviour
     [Header("Action Names")]
     [SerializeField] private string move = "Move";
     [SerializeField] private string jump = "Jump";
+    [SerializeField] private string dash = "Dash";
     [SerializeField] private string retry = "Retry";
+    [SerializeField] private string shoot = "Shoot"; // Tambahkan aksi menembak
 
     private InputAction moveAction;
     private InputAction jumpAction;
+    private InputAction dashAction;
     private InputAction retryAction;
+    private InputAction shootAction; // Tambahkan aksi menembak
 
     public Vector2 MoveInput { get; private set; }
     public bool JumpTriggered { get; private set; }
+    public bool DashTriggered { get; private set; }
+    public bool ShootTriggered { get; private set; } // Tambahkan aksi menembak
 
     private void Awake()
     {
@@ -48,7 +54,9 @@ public class PlayerInputHandler : MonoBehaviour
 
         moveAction = actionMap.FindAction(move);
         jumpAction = actionMap.FindAction(jump);
+        dashAction = actionMap.FindAction(dash);
         retryAction = actionMap.FindAction(retry);
+        shootAction = actionMap.FindAction(shoot); // Tambahkan aksi menembak
 
         RegisterInputActions();
     }
@@ -64,6 +72,16 @@ public class PlayerInputHandler : MonoBehaviour
         {
             jumpAction.performed += ctx => JumpTriggered = true;
             jumpAction.canceled += ctx => JumpTriggered = false;
+        }
+        if (dashAction != null)
+        {
+            dashAction.performed += ctx => DashTriggered = true;
+            dashAction.canceled += ctx => DashTriggered = false;
+        }
+        if (shootAction != null) // Tambahkan aksi menembak
+        {
+            shootAction.performed += ctx => ShootTriggered = true;
+            shootAction.canceled += ctx => ShootTriggered = false;
         }
         if (retryAction != null)
         {
@@ -81,14 +99,18 @@ public class PlayerInputHandler : MonoBehaviour
     {
         moveAction?.Enable();
         jumpAction?.Enable();
+        dashAction?.Enable();
         retryAction?.Enable();
+        shootAction?.Enable(); // Tambahkan aksi menembak
     }
 
     public void DisableInput()
     {
         moveAction?.Disable();
         jumpAction?.Disable();
+        dashAction?.Disable();
         retryAction?.Disable();
+        shootAction?.Disable(); // Tambahkan aksi menembak
     }
 
     private void OnEnable() => EnableInput();
