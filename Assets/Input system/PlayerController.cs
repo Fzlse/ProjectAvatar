@@ -35,16 +35,18 @@ public class PlayerController : MonoBehaviour
         HandleShooting();
     }
 
-    void HandleMovement()
+    public void HandleMovement()
     {
-        if (isDashing) return;
+        if (isDashing || PlayerInputHandler.Instance == null) return;
 
-        float moveDirection = 1;
+        float moveDirection = PlayerInputHandler.Instance.GetMoveInput().x;
         rb.velocity = new Vector2(moveDirection * moveSpeed, rb.velocity.y);
     }
 
-    void HandleJump()
+    public void HandleJump()
     {
+        if (PlayerInputHandler.Instance == null) return;
+
         isGrounded = Physics2D.Raycast(transform.position, Vector2.down, 0.6f, groundLayer);
 
         if (isGrounded)
@@ -52,15 +54,17 @@ public class PlayerController : MonoBehaviour
             canDash = true;
         }
 
-        if (PlayerInputHandler.Instance.JumpTriggered && isGrounded)
+        if (isGrounded && PlayerInputHandler.Instance.GetJumpTriggered())
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         }
     }
 
-    void HandleDash()
+    public void HandleDash()
     {
-        if (PlayerInputHandler.Instance.DashTriggered && !isGrounded && canDash)
+        if (PlayerInputHandler.Instance == null) return;
+
+        if (!isGrounded && canDash && PlayerInputHandler.Instance.GetDashTriggered())
         {
             StartCoroutine(Dash());
         }
@@ -87,10 +91,12 @@ public class PlayerController : MonoBehaviour
 
     void HandleShooting()
     {
-        if (PlayerInputHandler.Instance.ShootTriggered && Time.time >= nextFireTime)
+        if (PlayerInputHandler.Instance == null) return;
+
+        if (Time.time >= nextFireTime && PlayerInputHandler.Instance.GetShootTriggered()) // Use method
         {
             Shoot();
-            nextFireTime = Time.time + fireRate;  // Atur jeda tembakan
+            nextFireTime = Time.time + fireRate;
         }
     }
 
