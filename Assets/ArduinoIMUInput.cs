@@ -58,6 +58,9 @@ public class ArduinoIMUInput : MonoBehaviour
                 roll = float.Parse(values[1]);
                 yaw = float.Parse(values[2]);
 
+                // Debugging: Show values in Unity Console
+                Debug.Log($"Pitch: {pitch}, Roll: {roll}, Yaw: {yaw}");
+
                 SimulateInputs();
             }
         }

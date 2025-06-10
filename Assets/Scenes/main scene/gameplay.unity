@@ -448,7 +448,6 @@ GameObject:
   - component: {fileID: 298074868}
   - component: {fileID: 298074867}
   - component: {fileID: 298074866}
-  - component: {fileID: 298074874}
   - component: {fileID: 298074873}
   m_Layer: 0
   m_Name: player
@@ -676,39 +675,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 298074864}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af637a61db2372644b6fe6dd34a23ade, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  pitchUpThreshold: 0.5
-  pitchDownThreshold: -0.5
-  rollRightThreshold: 0.5
-  moveSpeed: 5
-  jumpForce: 7
-  dashForce: 10
-  dashDuration: 0.2
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 8
---- !u!114 &298074874
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 298074864}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d64aaeb61abecad4ea1d4a73383a7368, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   portName: COM4
   baudRate: 115200
-  pitchUpThreshold: 15
-  pitchDownThreshold: -15
-  rollRightThreshold: 15
+  pitchUpThreshold: -30
+  pitchDownThreshold: -20
+  rollRightThreshold: -52
   moveSpeed: 5
-  jumpForce: 7
-  dashForce: 10
+  jumpForce: 11
+  dashForce: 2
   dashDuration: 0.2
   groundLayer:
     serializedVersion: 2
