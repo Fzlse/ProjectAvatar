@@ -680,12 +680,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   portName: COM4
   baudRate: 115200
-  pitchUpThreshold: -30
-  pitchDownThreshold: -20
-  rollRightThreshold: -52
+  pitchUpThreshold: 10
+  pitchDownThreshold: -15
+  rollRightThreshold: 15
   moveSpeed: 5
-  jumpForce: 11
-  dashForce: 2
+  jumpForce: 8
+  dashForce: 10
   dashDuration: 0.2
   groundLayer:
     serializedVersion: 2

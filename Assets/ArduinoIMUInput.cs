@@ -42,7 +42,7 @@ public class ArduinoIMUInput : MonoBehaviour
         HandleJump();
         HandleDash();
     }
-
+    
     void ReadArduinoData()
     {
         if (serialPort == null || !serialPort.IsOpen) return;
@@ -50,21 +50,22 @@ public class ArduinoIMUInput : MonoBehaviour
         try
         {
             string data = serialPort.ReadLine(); // Expected format: "pitch,roll,yaw"
-            string[] values = data.Split(',');
+            ParseData(data);
+            Debug.Log($"Pitch: {pitch}, Roll: {roll}, Yaw: {yaw}");
 
-            if (values.Length >= 3)
-            {
-                pitch = float.Parse(values[0]);
-                roll = float.Parse(values[1]);
-                yaw = float.Parse(values[2]);
-
-                // Debugging: Show values in Unity Console
-                Debug.Log($"Pitch: {pitch}, Roll: {roll}, Yaw: {yaw}");
-
-                SimulateInputs();
-            }
+            SimulateInputs();
         }
         catch { }
+    }
+    void ParseData(string raw)
+    {
+        string[] parts = raw.Split(' ');
+        foreach (var part in parts)
+        {
+            if (part.StartsWith("P:")) pitch = float.Parse(part.Substring(2));
+            if (part.StartsWith("R:")) roll = float.Parse(part.Substring(2));
+            if (part.StartsWith("Y:")) yaw = float.Parse(part.Substring(2));
+        }
     }
 
     void SimulateInputs()
