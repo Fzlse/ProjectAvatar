@@ -9,7 +9,7 @@ public class GameManager : MonoBehaviour
 
     [Header("UI Settings")]
     public GameObject gameOverPanel;
-    public TextMeshProUGUI finalScoreText; // Tambahkan ini untuk menampilkan skor akhir
+    public TextMeshProUGUI finalScoreText;
 
     [Header("Score Settings")]
     public Transform player;
@@ -18,8 +18,11 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI scoreText;
 
     private bool isGameOver = false;
-
     public bool IsGameOver => isGameOver;
+
+    [Header("API Settings")]
+    public string playerName = "Player1"; // sementara default
+    private ScoreApiClient apiClient;
 
     private void Awake()
     {
@@ -39,6 +42,8 @@ public class GameManager : MonoBehaviour
 
         if (player != null)
             startPosition = player.position;
+
+        apiClient = gameObject.AddComponent<ScoreApiClient>(); // attach runtime
     }
 
     private void Update()
@@ -60,16 +65,20 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
 
         isGameOver = true;
-        Debug.Log("Game Over! Final Score: " + Mathf.FloorToInt(score));
+        int finalScore = Mathf.FloorToInt(score);
+        Debug.Log($"Game Over! Final Score: {finalScore}");
 
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
             if (finalScoreText != null)
-                finalScoreText.text = "Final Score: " + Mathf.FloorToInt(score);
+                finalScoreText.text = "Final Score: " + finalScore;
         }
 
         Time.timeScale = 0f;
+
+        // Kirim skor ke API
+        StartCoroutine(apiClient.SubmitScore(playerName, finalScore));
     }
 
     public void BackToMainMenu()
@@ -84,8 +93,5 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
 
-    public int GetScore()
-    {
-        return Mathf.FloorToInt(score);
-    }
+    public int GetScore() => Mathf.FloorToInt(score);
 }
