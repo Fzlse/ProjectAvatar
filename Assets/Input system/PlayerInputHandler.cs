@@ -15,19 +15,17 @@ public class PlayerInputHandler : MonoBehaviour
     [SerializeField] private string move = "Move";
     [SerializeField] private string jump = "Jump";
     [SerializeField] private string dash = "Dash";
-    [SerializeField] private string retry = "Retry";
-    [SerializeField] private string shoot = "Shoot"; // Tambahkan aksi menembak
+    [SerializeField] private string shoot = "Shoot"; // Aksi menembak
 
     private InputAction moveAction;
     private InputAction jumpAction;
     private InputAction dashAction;
-    private InputAction retryAction;
-    private InputAction shootAction; // Tambahkan aksi menembak
+    private InputAction shootAction; // Aksi menembak
 
     public Vector2 MoveInput { get; private set; }
     public bool JumpTriggered { get; private set; }
     public bool DashTriggered { get; private set; }
-    public bool ShootTriggered { get; private set; } // Tambahkan aksi menembak
+    public bool ShootTriggered { get; private set; }
 
     private void Awake()
     {
@@ -55,8 +53,7 @@ public class PlayerInputHandler : MonoBehaviour
         moveAction = actionMap.FindAction(move);
         jumpAction = actionMap.FindAction(jump);
         dashAction = actionMap.FindAction(dash);
-        retryAction = actionMap.FindAction(retry);
-        shootAction = actionMap.FindAction(shoot); // Tambahkan aksi menembak
+        shootAction = actionMap.FindAction(shoot); // aksi menembak
 
         RegisterInputActions();
     }
@@ -78,20 +75,10 @@ public class PlayerInputHandler : MonoBehaviour
             dashAction.performed += ctx => DashTriggered = true;
             dashAction.canceled += ctx => DashTriggered = false;
         }
-        if (shootAction != null) // Tambahkan aksi menembak
+        if (shootAction != null)
         {
             shootAction.performed += ctx => ShootTriggered = true;
             shootAction.canceled += ctx => ShootTriggered = false;
-        }
-        if (retryAction != null)
-        {
-            retryAction.performed += ctx =>
-            {
-                if (GameManager.Instance != null && GameManager.Instance.IsGameOver)
-                {
-                    GameManager.Instance.BackToMainMenu();
-                }
-            };
         }
     }
 
@@ -100,8 +87,7 @@ public class PlayerInputHandler : MonoBehaviour
         moveAction?.Enable();
         jumpAction?.Enable();
         dashAction?.Enable();
-        retryAction?.Enable();
-        shootAction?.Enable(); // Tambahkan aksi menembak
+        shootAction?.Enable();
     }
 
     public void DisableInput()
@@ -109,8 +95,7 @@ public class PlayerInputHandler : MonoBehaviour
         moveAction?.Disable();
         jumpAction?.Disable();
         dashAction?.Disable();
-        retryAction?.Disable();
-        shootAction?.Disable(); // Tambahkan aksi menembak
+        shootAction?.Disable();
     }
 
     private void OnEnable() => EnableInput();

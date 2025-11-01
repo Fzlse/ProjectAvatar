@@ -33,15 +33,6 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Retry",
-                    "type": "Button",
-                    "id": "14b703ff-4169-41b7-9dbe-f745aa3eae7f",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Dash",
                     "type": "Button",
                     "id": "5fa14183-c5bb-4b4e-99c4-c1dee87bbdab",
@@ -102,17 +93,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "left move",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5e30df27-46db-4658-99e9-2fdcdd84baf3",
-                    "path": "<Keyboard>/r",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Retry",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
