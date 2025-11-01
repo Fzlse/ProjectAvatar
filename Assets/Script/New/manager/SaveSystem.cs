@@ -21,7 +21,8 @@ public class SaveData
     public float spawnX;
     public Vector3 cameraPosition;     // NEW
     public Quaternion cameraRotation;  // optional
-
+    public float loopBGOffsetX;
+    public Vector3 loopBGWorldPos;     // NEW
     public List<PlatformState> platforms = new List<PlatformState>();
 }
 

@@ -1,7 +1,8 @@
+using System.Collections;
+using System.Collections.Generic; // List<PlatformState>
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
-using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,15 +17,22 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI finalScoreText;   // Teks skor akhir
     public TextMeshProUGUI scoreText;        // Teks skor real-time
 
+    [Header("Resume Countdown")]
+    public GameObject resumeCountdownPanel;      // Panel countdown (default: inactive)
+    public TextMeshProUGUI countdownText;        // TMP text "3..2..1"
+    public float resumeCountdownSeconds = 3f;    // durasi countdown
+    public float cameraCatchupSpeed = 5f;        // kecepatan kamera ngejar target
+    public bool autoCountdownOnSceneResume = true;
+
     [Header("References")]
     public Transform player;
     public LevelGenerator levelGen;
-    public Transform cameraTransform;   // NEW
+    public Transform cameraTransform;
+    public LoopBG loopBG;
 
-
-    // --- Skor: baseline + delta jarak dari baselinePos agar bisa resume mulus
-    private Vector3 baselinePos;             // posisi referensi untuk menghitung delta jarak
-    private float scoreBaseline = 0f;        // skor tersimpan saat resume / saat tekan Resume
+    // Skor: baseline + delta jarak dari baselinePos agar bisa resume mulus
+    private Vector3 baselinePos;        // posisi referensi untuk menghitung delta jarak
+    private float scoreBaseline = 0f;   // skor tersimpan saat resume / tekan Resume
     private bool isGameOver = false;
     public bool IsGameOver => isGameOver;
 
@@ -41,6 +49,7 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel) gameOverPanel.SetActive(false);
         if (confirmationPanel) confirmationPanel.SetActive(false);
         if (saveScorePanel) saveScorePanel.SetActive(false);
+        if (resumeCountdownPanel) resumeCountdownPanel.SetActive(false);
 
         isGameOver = false;
         Time.timeScale = 1f;
@@ -54,6 +63,19 @@ public class GameManager : MonoBehaviour
                 // Player position
                 if (player != null) player.position = data.playerPosition;
 
+                // Restore CAMERA
+                if (cameraTransform != null)
+                {
+                    cameraTransform.position = data.cameraPosition;
+                    cameraTransform.rotation = data.cameraRotation;
+                }
+
+                // Restore LOOP BG (offset + world pos + sinkron lastCameraPosition)
+                if (loopBG != null)
+                {
+                    loopBG.ApplyState(data.loopBGOffsetX, data.loopBGWorldPos, cameraTransform);
+                }
+
                 // Score baseline & display
                 scoreBaseline = data.score;
                 baselinePos = player != null ? player.position : Vector3.zero;
@@ -65,9 +87,17 @@ public class GameManager : MonoBehaviour
                     levelGen.disableAutoSpawnAtStart = true; // jangan auto-spawn pool awal
                     levelGen.RestoreFromSave(data);
                 }
+
+                // Auto countdown saat datang dari MainMenu → Gameplay (resume)
+                if (autoCountdownOnSceneResume)
+                {
+                    StartCoroutine(ResumeWithCountdownFromSceneLoad());
+                    SaveSystem.ResumeRequested = false;
+                    return; // hentikan Start() biar tidak lanjut logika lain
+                }
             }
 
-            SaveSystem.ResumeRequested = false; // reset flag
+            SaveSystem.ResumeRequested = false; // reset flag kalau tidak ada data
         }
         else
         {
@@ -80,7 +110,7 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isGameOver && player != null)
+        if (!isGameOver && player != null && Time.timeScale > 0f)
         {
             UpdateScoreText();
         }
@@ -169,44 +199,131 @@ public class GameManager : MonoBehaviour
     public void ResumeGame()
     {
         if (isGameOver) return;
-        if (pausePanel) pausePanel.SetActive(false);
-        Time.timeScale = 1f;
 
-        // jadikan posisi saat ini sebagai baseline baru supaya skor lanjut halus
+        // Tutup panel pause, mulai countdown (game tetap paused)
+        if (pausePanel) pausePanel.SetActive(false);
+        StartCoroutine(ResumeWithCountdown());
+    }
+
+    private IEnumerator ResumeWithCountdown()
+    {
+        // Freeze gameplay
+        Time.timeScale = 0f;
+
+        // Hitung target kamera: pertahankan offset relatif current camera → player
+        Vector3 startCamPos = cameraTransform ? cameraTransform.position : Vector3.zero;
+        Vector3 playerPos   = player ? player.position : startCamPos;
+        Vector3 offset      = startCamPos - playerPos;
+        Vector3 targetCamPos = playerPos + offset;
+
+        // Tampilkan panel countdown
+        if (resumeCountdownPanel) resumeCountdownPanel.SetActive(true);
+
+        float remaining = Mathf.Max(1f, resumeCountdownSeconds); // minimal 1 detik
+        while (remaining > 0f)
+        {
+            if (countdownText)
+                countdownText.text = Mathf.CeilToInt(remaining).ToString();
+
+            // Kamera mendekati target pakai unscaled delta
+            if (cameraTransform)
+            {
+                cameraTransform.position = Vector3.MoveTowards(
+                    cameraTransform.position,
+                    targetCamPos,
+                    cameraCatchupSpeed * Time.unscaledDeltaTime
+                );
+            }
+
+            remaining -= Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (resumeCountdownPanel) resumeCountdownPanel.SetActive(false);
+
+        // Unpause & reset baseline supaya skor lanjut mulus
         scoreBaseline = GetShownScore();
-        baselinePos = player != null ? player.position : baselinePos;
+        baselinePos   = player != null ? player.position : baselinePos;
         UpdateScoreText();
+
+        Time.timeScale = 1f;
+    }
+
+    // === Auto countdown saat resume dari MainMenu → Gameplay
+    private IEnumerator ResumeWithCountdownFromSceneLoad()
+    {
+        // Freeze gameplay
+        Time.timeScale = 0f;
+
+        // Target kamera: pertahankan offset relatif yang ada saat ini
+        Vector3 startCamPos = cameraTransform ? cameraTransform.position : Vector3.zero;
+        Vector3 playerPos   = player ? player.position : startCamPos;
+        Vector3 offset      = startCamPos - playerPos;
+        Vector3 targetCamPos = playerPos + offset;
+
+        if (resumeCountdownPanel) resumeCountdownPanel.SetActive(true);
+
+        float remaining = Mathf.Max(1f, resumeCountdownSeconds);
+        while (remaining > 0f)
+        {
+            if (countdownText)
+                countdownText.text = Mathf.CeilToInt(remaining).ToString();
+
+            if (cameraTransform)
+            {
+                cameraTransform.position = Vector3.MoveTowards(
+                    cameraTransform.position,
+                    targetCamPos,
+                    cameraCatchupSpeed * Time.unscaledDeltaTime
+                );
+            }
+
+            remaining -= Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (resumeCountdownPanel) resumeCountdownPanel.SetActive(false);
+
+        // Reset baseline skor supaya lanjut mulus
+        scoreBaseline = GetShownScore();
+        baselinePos   = player != null ? player.position : baselinePos;
+        UpdateScoreText();
+
+        Time.timeScale = 1f;
     }
 
     // ============================
     // === SAVE & EXIT TO MENU  ===
     // ============================
     public void SaveAndExit()
-{
-    var data = new SaveData
     {
-        playerPosition = player ? player.position : Vector3.zero,
-        score = GetShownScore(),
-        spawnX = levelGen ? levelGen.spawnX : 0f,
-        cameraPosition = cameraTransform ? cameraTransform.position : Vector3.zero,   // NEW
-        cameraRotation = cameraTransform ? cameraTransform.rotation : Quaternion.identity, // optional
-        platforms = levelGen ? levelGen.CapturePlatforms() : new List<PlatformState>()
-    };
+        var data = new SaveData
+        {
+            playerPosition = player ? player.position : Vector3.zero,
+            score = GetShownScore(),
+            spawnX = levelGen ? levelGen.spawnX : 0f,
 
-    SaveSystem.Save(data);
+            cameraPosition = cameraTransform ? cameraTransform.position : Vector3.zero,
+            cameraRotation = cameraTransform ? cameraTransform.rotation : Quaternion.identity,
 
-    Time.timeScale = 1f;
-    isGameOver = false;
-    SceneManager.LoadScene("MainMenu");
-}
+            platforms = levelGen ? levelGen.CapturePlatforms() : new List<PlatformState>(),
 
+            loopBGOffsetX = loopBG ? loopBG.GetCurrentOffsetX() : 0f,
+            loopBGWorldPos = loopBG ? loopBG.transform.position : Vector3.zero
+        };
+
+        SaveSystem.Save(data);
+
+        Time.timeScale = 1f;
+        isGameOver = false;
+        SceneManager.LoadScene("MainMenu");
+    }
 
     // =======================
     // === BACK TO MAIN MENU ==
     // =======================
     public void BackToMainMenu()
     {
-        // digunakan saat user memilih "No" pada leaderboard, atau cancel dsb.
         Time.timeScale = 1f;
         isGameOver = false;
         SceneManager.LoadScene("MainMenu");
