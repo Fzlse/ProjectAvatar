@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq; // untuk ToList()
 
 public class LevelGenerator : MonoBehaviour
 {
@@ -20,29 +21,33 @@ public class LevelGenerator : MonoBehaviour
     public GameObject enemyPrefab;
     public float enemySpawnChance = 0.3f;
     public float minEnemyDistance = 10f;
-    public float maxEnemyOffsetX = 3f; // Enemy bisa spawn agak bergeser dari platform
+    public float maxEnemyOffsetX = 3f;
     public float enemyOffsetY = 1.5f;
-    public float enemySpawnDelay = 10f; // Waktu delay sebelum musuh mulai spawn (bisa diatur di Inspector)
+    public float enemySpawnDelay = 10f;
 
     private List<GameObject> activeEnemies = new List<GameObject>();
-    private bool canSpawnEnemies = false; // Cegah spawn musuh di awal
+    private bool canSpawnEnemies = false;
 
     [Header("Player & Cleanup Settings")]
     public Transform playerTransform;
     public float safeZone = 15f;
     public float deleteOffset = 20f;
 
-    private List<GameObject> activePlatforms = new List<GameObject>();
+    [HideInInspector] public List<GameObject> activePlatforms = new List<GameObject>();
     private float lastSpawnX;
+
+    // === tambahan: agar Start bisa skip auto-spawn saat resume ===
+    [HideInInspector] public bool disableAutoSpawnAtStart = false;
 
     void Start()
     {
         StartCoroutine(FindPlayerTransform());
-        StartCoroutine(EnableEnemySpawnAfterDelay(enemySpawnDelay)); // Gunakan nilai dari Inspector
+        StartCoroutine(EnableEnemySpawnAfterDelay(enemySpawnDelay));
 
-        for (int i = 0; i < poolSize; i++)
+        if (!disableAutoSpawnAtStart)
         {
-            SpawnPlatform();
+            for (int i = 0; i < poolSize; i++)
+                SpawnPlatform();
         }
     }
 
@@ -63,16 +68,14 @@ public class LevelGenerator : MonoBehaviour
     {
         float randomY = Random.Range(minY, maxY);
 
-        // Cegah moving platform muncul di awal (misalnya, hanya muncul setelah 3 platform pertama)
         bool allowMovingPlatform = activePlatforms.Count >= 3;
         bool isMovingPlatform = allowMovingPlatform && (Random.value < movingPlatformChance);
 
-        GameObject platformToSpawn = isMovingPlatform ? movingPlatformPrefab : platformPrefab;
+        GameObject prefab = isMovingPlatform ? movingPlatformPrefab : platformPrefab;
 
-        GameObject platform = Instantiate(platformToSpawn, new Vector3(spawnX, randomY, 0), Quaternion.identity);
+        GameObject platform = Instantiate(prefab, new Vector3(spawnX, randomY, 0), Quaternion.identity);
         activePlatforms.Add(platform);
 
-        // Spawn musuh jika kondisi terpenuhi
         if (canSpawnEnemies && enemyPrefab != null && Random.value < enemySpawnChance && playerTransform != null)
         {
             float distanceFromPlayer = Mathf.Abs(spawnX - playerTransform.position.x);
@@ -83,11 +86,8 @@ public class LevelGenerator : MonoBehaviour
                 GameObject enemy = Instantiate(enemyPrefab, enemyPosition, Quaternion.identity);
                 activeEnemies.Add(enemy);
 
-                // Jika platform ini platform bergerak, jadikan enemy sebagai child dari platform
                 if (isMovingPlatform)
-                {
                     enemy.transform.SetParent(platform.transform);
-                }
             }
         }
 
@@ -99,7 +99,7 @@ public class LevelGenerator : MonoBehaviour
     {
         if (activePlatforms.Count > 0)
         {
-            GameObject firstPlatform = activePlatforms[0];
+            var firstPlatform = activePlatforms[0];
 
             if (firstPlatform == null)
             {
@@ -119,7 +119,7 @@ public class LevelGenerator : MonoBehaviour
     {
         if (activeEnemies.Count > 0)
         {
-            GameObject firstEnemy = activeEnemies[0];
+            var firstEnemy = activeEnemies[0];
 
             if (firstEnemy == null)
             {
@@ -148,10 +148,7 @@ public class LevelGenerator : MonoBehaviour
             if (playerTransform == null)
             {
                 GameObject playerObj = GameObject.FindWithTag("Player");
-                if (playerObj != null)
-                {
-                    playerTransform = playerObj.transform;
-                }
+                if (playerObj != null) playerTransform = playerObj.transform;
             }
 
             if (playerTransform != null)
@@ -174,6 +171,67 @@ public class LevelGenerator : MonoBehaviour
         playerTransform = null;
         canSpawnEnemies = false;
         StartCoroutine(FindPlayerTransform());
-        StartCoroutine(EnableEnemySpawnAfterDelay(enemySpawnDelay)); // Pakai nilai delay dari Inspector
+        StartCoroutine(EnableEnemySpawnAfterDelay(enemySpawnDelay));
+    }
+
+    // ====== CAPTURE & RESTORE ======
+
+    public List<PlatformState> CapturePlatforms()
+    {
+        var list = new List<PlatformState>();
+
+        foreach (var go in activePlatforms)
+        {
+            if (go == null) continue;
+
+            var mp = go.GetComponent<MovingPlatform>();
+            if (mp != null)
+            {
+                list.Add(mp.CaptureState());
+            }
+            else
+            {
+                list.Add(new PlatformState
+                {
+                    position = go.transform.position,
+                    isMoving = false
+                });
+            }
+        }
+
+        return list;
+    }
+
+    public void RestoreFromSave(SaveData data)
+    {
+        // bersihkan yang ada
+        foreach (var p in activePlatforms) if (p) Destroy(p);
+        activePlatforms.Clear();
+
+        foreach (var e in FindObjectsOfType<Enemy>())
+            Destroy(e.gameObject);
+        // kosongkan list musuh yang dilacak
+        // (kalau kamu simpan musuh juga, tambahkan rekonstruksi di sini)
+        
+        // pulihkan spawnX supaya generator lanjut dari titik ini
+        spawnX = data.spawnX;
+        lastSpawnX = spawnX; // aman: akan ditimpa ketika Spawn berikutnya
+
+        // spawn ulang platform sesuai state
+        foreach (var st in data.platforms)
+        {
+            var prefab = st.isMoving ? movingPlatformPrefab : platformPrefab;
+            var go = Instantiate(prefab, st.position, Quaternion.identity);
+            activePlatforms.Add(go);
+
+            if (st.isMoving)
+            {
+                var mp = go.GetComponent<MovingPlatform>();
+                if (mp != null)
+                {
+                    mp.ApplyState(st);
+                }
+            }
+        }
     }
 }
