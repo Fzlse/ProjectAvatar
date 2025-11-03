@@ -19,18 +19,17 @@ public class SaveData
     public Vector3 playerPosition;
     public int score;
     public float spawnX;
-    public Vector3 cameraPosition;     // NEW
-    public Quaternion cameraRotation;  // optional
+    public Vector3 cameraPosition;
+    public Quaternion cameraRotation;
     public float loopBGOffsetX;
-    public Vector3 loopBGWorldPos;     // NEW
+    public Vector3 loopBGWorldPos;
     public List<PlatformState> platforms = new List<PlatformState>();
 }
-
 
 public static class SaveSystem
 {
     private const string Key = "SaveData_V1";
-    public static bool ResumeRequested = false; // flag sementara (tidak dipersist)
+    public static bool ResumeRequested = false;
 
     public static void Save(SaveData data)
     {
