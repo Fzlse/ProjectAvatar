@@ -1589,17 +1589,16 @@ MonoBehaviour:
   confirmationPanel: {fileID: 2120867345}
   saveScorePanel: {fileID: 764371948}
   nameInputField: {fileID: 274505469}
-  finalScoreText: {fileID: 929751974}
-  scoreText: {fileID: 966094634}
   resumeCountdownPanel: {fileID: 1324355765}
   countdownText: {fileID: 261255154}
-  resumeCountdownSeconds: 3
-  cameraCatchupSpeed: 5
-  autoCountdownOnSceneResume: 1
   player: {fileID: 298074865}
   levelGen: {fileID: 852373113}
   cameraTransform: {fileID: 600003358}
   loopBG: {fileID: 1495003059}
+  scoreText: {fileID: 966094634}
+  autoCountdownOnSceneResume: 1
+  resumeCountdownSeconds: 3
+  cameraCatchupSpeed: 5
   apiPlayerIdOverride: 
 --- !u!4 &757095883
 Transform:
@@ -8619,7 +8618,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 757095882}
         m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
-        m_MethodName: PauseGame
+        m_MethodName: Pause
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

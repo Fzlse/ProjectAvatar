@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
-using ProjectAvatar.API;   // <— pakai DTO API yang barusan
+using ProjectAvatar.API;   // pakai DTO API
 
 public class GameManager : MonoBehaviour
 {
@@ -15,23 +15,25 @@ public class GameManager : MonoBehaviour
     public GameObject confirmationPanel;
     public GameObject saveScorePanel;
     public TMP_InputField nameInputField;
-    public TextMeshProUGUI finalScoreText;
-    public TextMeshProUGUI scoreText;
-
-    [Header("Resume Countdown")]
     public GameObject resumeCountdownPanel;
     public TextMeshProUGUI countdownText;
-    public float resumeCountdownSeconds = 3f;
-    public float cameraCatchupSpeed = 5f;
-    public bool autoCountdownOnSceneResume = true;
 
-    [Header("References")]
+    [Header("Player & Camera")]
     public Transform player;
     public LevelGenerator levelGen;
     public Transform cameraTransform;
     public LoopBG loopBG;
 
-    [Header("Cloud API")]
+    [Header("Score")]
+    public TextMeshProUGUI scoreText;
+
+    [Header("Resume Options")]
+    public bool autoCountdownOnSceneResume = true;
+    public float resumeCountdownSeconds = 3f;
+    public float cameraCatchupSpeed = 5f;
+
+    [Header("API")]
+    [Tooltip("Kalau kosong pakai deviceUniqueIdentifier")]
     public string apiPlayerIdOverride = "";
 
     private Vector3 baselinePos;
@@ -45,11 +47,16 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else { Destroy(gameObject); return; }
+        if (Instance == null)
+            Instance = this;
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
     }
 
-    private void Start()
+    void Start()
     {
         if (pausePanel) pausePanel.SetActive(false);
         if (gameOverPanel) gameOverPanel.SetActive(false);
@@ -60,46 +67,67 @@ public class GameManager : MonoBehaviour
         isGameOver = false;
         Time.timeScale = 1f;
 
-        if (SaveSystem.ResumeRequested && SaveSystem.HasSave())
+        StartCoroutine(InitFromCloud());
+    }
+
+ private IEnumerator InitFromCloud()
+{
+    // default start baru
+    baselinePos = player ? player.position : Vector3.zero;
+    scoreBaseline = 0f;
+
+    // cuma kalau dari menu tadi pilih "Resume"
+    if (SaveSystem.ResumeRequested)
+    {
+        SaveData remoteData = null;
+        string err = null;
+
+        yield return SaveSystem.DownloadFromServer(
+            ApiPlayerId,
+            onOk: d => remoteData = d,
+            onErr: e => err = e
+        );
+
+        if (remoteData != null)
         {
-            var data = SaveSystem.Load();
-            if (data != null)
+            // apply data
+            if (player) player.position = remoteData.playerPosition;
+            if (cameraTransform)
             {
-                if (player) player.position = data.playerPosition;
-                if (cameraTransform)
-                {
-                    cameraTransform.position = data.cameraPosition;
-                    cameraTransform.rotation = data.cameraRotation;
-                }
-                if (loopBG)
-                    loopBG.ApplyState(data.loopBGOffsetX, data.loopBGWorldPos, cameraTransform);
-
-                scoreBaseline = data.score;
-                baselinePos = player ? player.position : Vector3.zero;
-                UpdateScoreText();
-
-                if (levelGen)
-                {
-                    levelGen.disableAutoSpawnAtStart = true;
-                    levelGen.RestoreFromSave(data);
-                }
-
-                if (autoCountdownOnSceneResume)
-                {
-                    StartCoroutine(ResumeWithCountdownFromSceneLoad());
-                    SaveSystem.ResumeRequested = false;
-                    return;
-                }
+                cameraTransform.position = remoteData.cameraPosition;
+                cameraTransform.rotation = remoteData.cameraRotation;
             }
-            SaveSystem.ResumeRequested = false;
+            if (loopBG)
+                loopBG.ApplyState(remoteData.loopBGOffsetX, remoteData.loopBGWorldPos, cameraTransform);
+
+            scoreBaseline = remoteData.score;
+            baselinePos = player ? player.position : baselinePos;
+
+            if (levelGen)
+            {
+                levelGen.disableAutoSpawnAtStart = true;
+                levelGen.RestoreFromSave(remoteData);
+            }
+
+            if (autoCountdownOnSceneResume)
+                yield return StartCoroutine(ResumeWithCountdownFromSceneLoad());
+            else
+                UpdateScoreText();
         }
         else
         {
-            baselinePos = player ? player.position : Vector3.zero;
-            scoreBaseline = 0f;
+            // resume diminta tapi server gak punya → mulai baru
             UpdateScoreText();
         }
+
+        SaveSystem.ResumeRequested = false; // habis dipakai
     }
+    else
+    {
+        // jalur Play (new game)
+        UpdateScoreText();
+    }
+}
 
     private void Update()
     {
@@ -125,70 +153,53 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
-
-        int finalScore = GetShownScore();
         Time.timeScale = 0f;
-
         if (gameOverPanel) gameOverPanel.SetActive(true);
-        if (finalScoreText) finalScoreText.text = "Final Score: " + finalScore;
-
-        if (ScoreManager.Instance != null && ScoreManager.Instance.IsTopFromServer(finalScore))
-        {
-            if (confirmationPanel) confirmationPanel.SetActive(true);
-        }
-        else
-        {
-            if (confirmationPanel) confirmationPanel.SetActive(false);
-        }
     }
 
-    public void ChooseSaveScore(bool save)
+    public void ShowSaveScorePanel()
     {
-        if (save)
-        {
-            if (confirmationPanel) confirmationPanel.SetActive(false);
-            if (saveScorePanel) saveScorePanel.SetActive(true);
-        }
-        else
-        {
-            BackToMainMenu();
-        }
+        if (saveScorePanel) saveScorePanel.SetActive(true);
     }
 
-    public void ConfirmSaveScore()
+    public void OnSaveScoreConfirm()
     {
-        int finalScore = GetShownScore();
-        string playerName = nameInputField ? nameInputField.text.Trim() : "";
-        if (string.IsNullOrEmpty(playerName)) playerName = "Player";
+        string playerName = nameInputField ? nameInputField.text : "Player";
+        int score = GetShownScore();
+        StartCoroutine(SubmitScoreCloud(ApiPlayerId, playerName, score));
 
-        if (ScoreManager.Instance != null)
-        {
-            ScoreManager.Instance.SubmitToServer(ApiPlayerId, playerName, finalScore);
-            ScoreManager.Instance.openLeaderboardOnMenu = true;
-        }
+        if (saveScorePanel) saveScorePanel.SetActive(false);
+    }
 
-        StartCoroutine(SubmitScoreCloud(ApiPlayerId, playerName, finalScore));
-
-        Time.timeScale = 1f;
-        SceneManager.LoadScene("MainMenu");
+    public void OnSaveScoreCancel()
+    {
+        if (saveScorePanel) saveScorePanel.SetActive(false);
     }
 
     // ===== PAUSE =====
-    public void PauseGame()
+    public void Pause()
     {
         if (isGameOver) return;
+
         Time.timeScale = 0f;
         if (pausePanel) pausePanel.SetActive(true);
     }
 
-    public void ResumeGame()
+    public void Resume()
     {
-        if (isGameOver) return;
         if (pausePanel) pausePanel.SetActive(false);
-        StartCoroutine(ResumeWithCountdown());
+
+        if (resumeCountdownPanel && resumeCountdownSeconds > 0.1f)
+        {
+            StartCoroutine(ResumeWithCountdown());
+        }
+        else
+        {
+            Time.timeScale = 1f;
+        }
     }
 
-    private IEnumerator ResumeWithCountdown()
+    IEnumerator ResumeWithCountdown()
     {
         Time.timeScale = 0f;
 
@@ -223,10 +234,11 @@ public class GameManager : MonoBehaviour
         scoreBaseline = GetShownScore();
         baselinePos = player ? player.position : baselinePos;
         UpdateScoreText();
+
         Time.timeScale = 1f;
     }
 
-    private IEnumerator ResumeWithCountdownFromSceneLoad()
+    IEnumerator ResumeWithCountdownFromSceneLoad()
     {
         Time.timeScale = 0f;
 
@@ -261,11 +273,36 @@ public class GameManager : MonoBehaviour
         scoreBaseline = GetShownScore();
         baselinePos = player ? player.position : baselinePos;
         UpdateScoreText();
+
         Time.timeScale = 1f;
     }
 
-    // ===== SAVE & EXIT =====
+    // ===== CONFIRMATION (misal di tombol Quit) =====
+    public void ShowConfirmation()
+    {
+        if (confirmationPanel) confirmationPanel.SetActive(true);
+        Time.timeScale = 0f;
+    }
+
+    public void OnConfirmYes()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    public void OnConfirmNo()
+    {
+        if (confirmationPanel) confirmationPanel.SetActive(false);
+        Time.timeScale = 0f;
+    }
+
+    // ===== SAVE & EXIT (REST ONLY) =====
     public void SaveAndExit()
+    {
+        StartCoroutine(SaveAndExitRoutine());
+    }
+
+    private IEnumerator SaveAndExitRoutine()
     {
         var data = new SaveData
         {
@@ -279,8 +316,12 @@ public class GameManager : MonoBehaviour
             loopBGWorldPos = loopBG ? loopBG.transform.position : Vector3.zero
         };
 
-        SaveSystem.Save(data);
-        StartCoroutine(UploadSaveCloud(ApiPlayerId, data));
+        yield return SaveSystem.UploadToServer(
+            ApiPlayerId,
+            data,
+            onOk: () => { },
+            onErr: err => { Debug.LogWarning(err); }
+        );
 
         Time.timeScale = 1f;
         isGameOver = false;
@@ -304,55 +345,5 @@ public class GameManager : MonoBehaviour
             onOk: res => Debug.Log($"[API] Submit OK, rank = {res.rank}"),
             onErr: err => Debug.LogWarning($"[API] Submit gagal: {err}")
         );
-    }
-
-    IEnumerator UploadSaveCloud(string playerId, SaveData local)
-    {
-        var req = new SaveUpsertReq
-        {
-            version = 1,
-            score = local.score,
-            playerPosition = new Vec3 { x = local.playerPosition.x, y = local.playerPosition.y, z = local.playerPosition.z },
-            camera = new SaveCamera
-            {
-                position = new Vec3 { x = local.cameraPosition.x, y = local.cameraPosition.y, z = local.cameraPosition.z },
-                rotation = new Quat { x = local.cameraRotation.x, y = local.cameraRotation.y, z = local.cameraRotation.z, w = local.cameraRotation.w }
-            },
-            level = new SaveLevel
-            {
-                spawnX = local.spawnX,
-                platforms = ConvertPlatforms(local.platforms)
-            },
-            loopBG = new SaveLoop
-            {
-                offsetX = local.loopBGOffsetX,
-                worldPos = new Vec3 { x = local.loopBGWorldPos.x, y = local.loopBGWorldPos.y, z = local.loopBGWorldPos.z }
-            }
-        };
-
-        yield return ApiClient.PutJson($"/api/saves/{playerId}", req,
-            onOk: () => Debug.Log("[API] Save OK"),
-            onErr: err => Debug.LogWarning($"[API] Save gagal: {err}")
-        );
-    }
-
-    List<ApiPlatformState> ConvertPlatforms(List<PlatformState> src)
-    {
-        var list = new List<ApiPlatformState>();
-        if (src == null) return list;
-
-        foreach (var p in src)
-        {
-            list.Add(new ApiPlatformState
-            {
-                position = new Vec3 { x = p.position.x, y = p.position.y, z = p.position.z },
-                isMoving = p.isMoving,
-                moveDistance = p.moveDistance,
-                moveSpeed = p.moveSpeed,
-                movingRight = p.movingRight,
-                startPosX = p.startPosX
-            });
-        }
-        return list;
     }
 }

@@ -1,28 +1,54 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class MainMenu : MonoBehaviour
 {
     public LeaderboardPanelController leaderboardCtrl;
     public GameObject mainMenuPanel;
-    public GameObject resumeButton; // optional: untuk hide kalau tak ada save
+    public GameObject resumeButton; // akan aktif kalau ada save di server
 
     private void Start()
     {
         if (resumeButton != null)
-            resumeButton.SetActive(SaveSystem.HasSave());
+            resumeButton.SetActive(false);
+
+        // cek ke server: ada save atau nggak
+        StartCoroutine(CheckCloudSave());
     }
 
+    private IEnumerator CheckCloudSave()
+    {
+        string playerId = SystemInfo.deviceUniqueIdentifier;
+        bool hasSave = false;
+
+        yield return SaveSystem.DownloadFromServer(
+            playerId,
+            onOk: data =>
+            {
+                hasSave = data != null;
+            },
+            onErr: err =>
+            {
+                Debug.LogWarning("[MainMenu] Gagal cek save cloud: " + err);
+            }
+        );
+
+        if (resumeButton != null)
+            resumeButton.SetActive(hasSave);
+    }
+
+    // NEW GAME
     public void Play()
     {
-        SaveSystem.ResumeRequested = false;
+        SaveSystem.ResumeRequested = false;   // penting: jangan load save
         SceneManager.LoadScene("gameplay");
     }
 
+    // RESUME
     public void Resume()
     {
-        if (!SaveSystem.HasSave()) return;
-        SaveSystem.ResumeRequested = true;
+        SaveSystem.ResumeRequested = true;    // penting: suruh GM ambil dari server
         SceneManager.LoadScene("gameplay");
     }
 

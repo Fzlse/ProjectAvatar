@@ -903,7 +903,7 @@ GameObject:
   - component: {fileID: 695030455}
   - component: {fileID: 695030454}
   m_Layer: 5
-  m_Name: Mulai (1)
+  m_Name: RESUME
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1884,8 +1884,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   leaderboardCtrl: {fileID: 510887317}
-  mainMenuPanel: {fileID: 0}
-  resumeButton: {fileID: 0}
+  mainMenuPanel: {fileID: 908391533}
+  resumeButton: {fileID: 695030452}
 --- !u!114 &1036430459
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3625,8 +3625,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60ce504ba8266b44f9174b699ac64bba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scores:
-    entries: []
+  topPath: /api/leaderboard/top?limit=5
   openLeaderboardOnMenu: 1
 --- !u!4 &1942286815
 Transform:
