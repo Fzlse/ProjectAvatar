@@ -25,9 +25,7 @@ _Unleash Creativity, Elevate Experiences Instantly_
 
 ## Overview
 
-ProjectAvatar adalah proyek game & service kecil yang menggabungkan **Unity (client)** dan **.NET** untuk fitur seperti leaderboard dan penyimpanan progres. Repositori ini berfungsi sebagai titik awal yang ringkas untuk menjalankan service/API lokal dan (opsional) menghubungkan game client.
-
-> Catatan: Sesuaikan deskripsi singkat ini dengan fokus repositori kamu (hanya server/.NET saja atau juga Unity project).
+ProjectAvatar adalah proyek game & service kecil yang menggabungkan **Unity (client)** dan **.NET** untuk fitur seperti leaderboard dan penyimpanan progres. Repositori ini berfungsi sebagai titik awal yang ringkas untuk menjalankan service/API lokal dan menghubungkan game client.
 
 ---
 
@@ -39,7 +37,7 @@ Proyek ini memerlukan dependensi berikut:
 
 - **Programming Language**: CSharp (.NET SDK 8.0 atau lebih baru)
 - **Package Manager**: NuGet
-- (Opsional) **Unity Editor**: 2022.3 LTS atau yang kamu gunakan pada client
+-  **Unity Editor**: 2022.3 LTS atau yang kamu gunakan pada client
 
 ---
 
