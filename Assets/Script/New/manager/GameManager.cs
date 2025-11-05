@@ -26,6 +26,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Score")]
     public TextMeshProUGUI scoreText;
+    public TextMeshProUGUI finalScoreText;   // << tambah untuk tampilkan skor akhir di Game Over
 
     [Header("Resume Options")]
     public bool autoCountdownOnSceneResume = true;
@@ -70,64 +71,64 @@ public class GameManager : MonoBehaviour
         StartCoroutine(InitFromCloud());
     }
 
- private IEnumerator InitFromCloud()
-{
-    // default start baru
-    baselinePos = player ? player.position : Vector3.zero;
-    scoreBaseline = 0f;
-
-    // cuma kalau dari menu tadi pilih "Resume"
-    if (SaveSystem.ResumeRequested)
+    private IEnumerator InitFromCloud()
     {
-        SaveData remoteData = null;
-        string err = null;
+        // default start baru
+        baselinePos = player ? player.position : Vector3.zero;
+        scoreBaseline = 0f;
 
-        yield return SaveSystem.DownloadFromServer(
-            ApiPlayerId,
-            onOk: d => remoteData = d,
-            onErr: e => err = e
-        );
-
-        if (remoteData != null)
+        // cuma kalau dari menu tadi pilih "Resume"
+        if (SaveSystem.ResumeRequested)
         {
-            // apply data
-            if (player) player.position = remoteData.playerPosition;
-            if (cameraTransform)
+            SaveData remoteData = null;
+            string err = null;
+
+            yield return SaveSystem.DownloadFromServer(
+                ApiPlayerId,
+                onOk: d => remoteData = d,
+                onErr: e => err = e
+            );
+
+            if (remoteData != null)
             {
-                cameraTransform.position = remoteData.cameraPosition;
-                cameraTransform.rotation = remoteData.cameraRotation;
+                // apply data
+                if (player) player.position = remoteData.playerPosition;
+                if (cameraTransform)
+                {
+                    cameraTransform.position = remoteData.cameraPosition;
+                    cameraTransform.rotation = remoteData.cameraRotation;
+                }
+                if (loopBG)
+                    loopBG.ApplyState(remoteData.loopBGOffsetX, remoteData.loopBGWorldPos, cameraTransform);
+
+                scoreBaseline = remoteData.score;
+                baselinePos = player ? player.position : baselinePos;
+
+                if (levelGen)
+                {
+                    levelGen.disableAutoSpawnAtStart = true;
+                    levelGen.RestoreFromSave(remoteData);
+                }
+
+                if (autoCountdownOnSceneResume)
+                    yield return StartCoroutine(ResumeWithCountdownFromSceneLoad());
+                else
+                    UpdateScoreText();
             }
-            if (loopBG)
-                loopBG.ApplyState(remoteData.loopBGOffsetX, remoteData.loopBGWorldPos, cameraTransform);
-
-            scoreBaseline = remoteData.score;
-            baselinePos = player ? player.position : baselinePos;
-
-            if (levelGen)
-            {
-                levelGen.disableAutoSpawnAtStart = true;
-                levelGen.RestoreFromSave(remoteData);
-            }
-
-            if (autoCountdownOnSceneResume)
-                yield return StartCoroutine(ResumeWithCountdownFromSceneLoad());
             else
+            {
+                // resume diminta tapi server gak punya → mulai baru
                 UpdateScoreText();
+            }
+
+            SaveSystem.ResumeRequested = false; // habis dipakai
         }
         else
         {
-            // resume diminta tapi server gak punya → mulai baru
+            // jalur Play (new game)
             UpdateScoreText();
         }
-
-        SaveSystem.ResumeRequested = false; // habis dipakai
     }
-    else
-    {
-        // jalur Play (new game)
-        UpdateScoreText();
-    }
-}
 
     private void Update()
     {
@@ -153,8 +154,22 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
+
+        int finalScore = GetShownScore();
         Time.timeScale = 0f;
+
         if (gameOverPanel) gameOverPanel.SetActive(true);
+        if (finalScoreText) finalScoreText.text = "Final Score: " + finalScore;
+
+        // Tawarkan konfirmasi submit hanya jika skor layak (berdasar cache top server).
+        if (ScoreManager.Instance != null && ScoreManager.Instance.IsTopFromServer(finalScore))
+        {
+            if (confirmationPanel) confirmationPanel.SetActive(true);
+        }
+        else
+        {
+            if (confirmationPanel) confirmationPanel.SetActive(false);
+        }
     }
 
     public void ShowSaveScorePanel()
@@ -164,11 +179,24 @@ public class GameManager : MonoBehaviour
 
     public void OnSaveScoreConfirm()
     {
-        string playerName = nameInputField ? nameInputField.text : "Player";
         int score = GetShownScore();
-        StartCoroutine(SubmitScoreCloud(ApiPlayerId, playerName, score));
+        string playerName = nameInputField ? nameInputField.text.Trim() : "";
+        if (string.IsNullOrEmpty(playerName)) playerName = "Player";
 
-        if (saveScorePanel) saveScorePanel.SetActive(false);
+        // Hindari double-submit. Pakai ScoreManager agar bisa auto-buka leaderboard di Main Menu.
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.SubmitToServer(ApiPlayerId, playerName, score);
+            ScoreManager.Instance.openLeaderboardOnMenu = true; // Main Menu akan auto buka leaderboard
+        }
+        else
+        {
+            // Fallback kalau ScoreManager belum ada di scene
+            StartCoroutine(SubmitScoreCloud(ApiPlayerId, playerName, score));
+        }
+
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu");
     }
 
     public void OnSaveScoreCancel()

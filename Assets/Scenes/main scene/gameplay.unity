@@ -1190,8 +1190,8 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 757095882}
         m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
-        m_MethodName: ChooseSaveScore
-        m_Mode: 6
+        m_MethodName: ShowSaveScorePanel
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -1585,7 +1585,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pausePanel: {fileID: 334409453}
-  gameOverPanel: {fileID: 424841919}
+  gameOverPanel: {fileID: 2120867345}
   confirmationPanel: {fileID: 2120867345}
   saveScorePanel: {fileID: 764371948}
   nameInputField: {fileID: 274505469}
@@ -1881,8 +1881,8 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 757095882}
         m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
-        m_MethodName: ChooseSaveScore
-        m_Mode: 6
+        m_MethodName: BackToMainMenu
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -7111,7 +7111,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 757095882}
         m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
-        m_MethodName: ConfirmSaveScore
+        m_MethodName: OnSaveScoreConfirm
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -8486,7 +8486,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 757095882}
         m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
-        m_MethodName: ResumeGame
+        m_MethodName: Resume
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
